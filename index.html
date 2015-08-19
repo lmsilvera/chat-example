@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Creating a chat</title>
+  <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'>
+  <style>
+    body{
+      font-family: 'Roboto', sans-serif;
+    }
+    #contentWrap{
+      display: none;
+    }
+    #chatWrap{
+      height: 500px;
+      with: 300px;
+      float: left;
+      border: 1px #000 solid;
+    }
+    .error{
+      color: red;
+    }
+    .whisper{
+      color: gray;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="nickWrap">
+    <p>Enter a username:</p>
+    <p id="nickError"></p>
+    <form id="setNick">
+      <input size="35" id="nickname"></input>
+      <input type="submit"></input>
+    </form>
+  </div>
+
+  <div id="contentWrap">
+    <div id="chatWrap">
+      <form id="send-message">
+        <input size="35" id="message"></input>
+        <input type="submit"></input>
+      </form>
+    </div>
+    <div id="users"></div>
+  </div>
+
+  <script src="//code.jquery.com/jquery-latest.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="text/javascript">
+  jQuery(function readyPage($) {
+    var socket = io.connect();
+
+    var $nickForm = $('#setNick');
+    var $nickError = $('#nickError');
+    var $nickname = $('#nickname');
+
+    var $users = $('#users');
+
+    var $messageForm = $('#send-message');
+    var $messageBox = $('#message');
+    var $chat = $('#chatWrap');
+
+    $nickForm.submit(function(event) {
+      event.preventDefault();
+      socket.emit('new user', $nickname.val(), function(data){
+        if (data) {
+          $('#nickWrap').hide();
+          $('#contentWrap').show();
+        }else{
+          $nickError.html('Error');
+        };
+      });
+      $nickname.val('');
+    });
+
+    $messageForm.submit(function(e) {
+      e.preventDefault();
+      socket.emit('send message', $messageBox.val(), function(data) {
+        $chat.append('<span class="error">' + data + "</span><br/>");
+      });
+      $messageBox.val('');
+    });
+
+    socket.on('load old msgs', function(docs) {
+      docs.forEach(function(element, index){
+        displayMsg(element);
+      });
+    });
+
+    socket.on('new message', function(data){
+      displayMsg(data);
+    });
+
+    socket.on('whisper', function(data){
+      displayMsg(data);
+    });
+
+    function displayMsg (data) {
+      $chat.append('<span class="whisper"> <b>' + data.nick + ': </b>' + data.msg + "</span><br/>");
+    }
+
+    socket.on('usernames', function(data){
+      var html = '';
+      data.forEach(function(element, index){
+        html += element + '<br/>';
+      });
+      $users.html(html);
+      $
+    });
+  });
+  </script>
+</body>
+</html>
